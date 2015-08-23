@@ -48,7 +48,7 @@ end
    --criterion:cuda()
 --end
 --dataLocT7 = '../../Data/Torch/'
-dataLocT7 ='../../../../MSc_Data/NYU_V2/Torch/'
+dataLocT7 ='../../MSc/MSc_Data/NYU_V2/Torch/'
 trInfo = torch.load('dataloc..Train_Info.t7');
 
 
@@ -65,7 +65,6 @@ print '==> defining some tools'
 -- classes
 classes = {'1','2','3','4','5'}
 nClasses = 5
-classes = {}
 --for i = 1,nClasses do
   --table.insert(classes,tostring(i))
 --end
@@ -82,7 +81,10 @@ testLogger = optim.Logger(paths.concat(opt.save, 'test.log'))
 -- this extracts and flattens all the trainable parameters of the mode
 -- into a 1-dim vector
 if model then
-   parameters,gradParameters = model:getParameters()
+    convModel = model:get(1)
+    linModel = model:get(2)
+   parameters,gradParameters = convModel:getParameters()
+   parametersLin,gradParametersLin = linModel:getParameters()
 end
 
 ----------------------------------------------------------------------
@@ -150,12 +152,13 @@ local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
    print("==> online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
    for t = 1,trsize,opt.batchSize do
       -- disp progress
-      collectgarbage()
+      
       xlua.progress(t, trsize)
 
       -- create mini batch
       local inputs = {}
       local targets = {}
+      collectgarbage()
       for i = t,math.min(t+opt.batchSize-1,trsize) do
          -- load new sample
          
@@ -176,6 +179,7 @@ local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
          labels = labels:reshape(height*width*scale*scale)
          --labels = labels:double()
          
+         collectgarbage()
          local input = imageSample:clone()
          local target = labels
          --if opt.type == 'double' then 
@@ -203,24 +207,28 @@ local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
                        gradParameters:zero()
 
                        -- f is the average of all criterions
-                       local f = 0
+                       --local f = 0
 
                        -- evaluate function for complete mini batch
                        for i = 1,#inputs do
                           -- estimate f
                          collectgarbage()
-                          local output = model:forward(inputs[i])
-                           
-                          local err = criterion:forward(output, targets[i])
+                          local output = convModel:forward(inputs[i])
                           
-                          f = f + err
-
+                          
+                          -- do an epoch on the linear model using the output of the conv model as batch of inputs
+                          --local err = criterion:forward(output, targets[i])
+                          
+                          err = trainLin(output,targets[i])
+                          f = err
+                          
+                          
+                          collectgarbage()
                           -- estimate df/dW
-                          local df_do = criterion:backward(output, targets[i])
-                          model:backward(inputs[i], df_do)
+                          --local df_do = criterion:backward(output, targets[i])
+                          convModel:backward(inputs[i], err)
 
-                          -- update confusion
-                          --confusion:add(output, targets[i])
+                          
                        end
 
                        -- normalize gradients and f(X)
@@ -229,7 +237,9 @@ local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
 
                        -- return f and df/dX
                        return f,gradParameters
-                    end
+                       
+                       
+      end
 
       -- optimize on current mini-batch\
       
@@ -241,7 +251,11 @@ local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
          optimMethod(feval, parameters, optimState)
          
       end
-   end
+   
+   
+  
+  end
+  
 
    -- time taken
    time = sys.clock() - time
@@ -268,3 +282,52 @@ local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
    confusion:zero()
    epoch = epoch + 1
 end
+
+function trainLin(inputsLin, targetsLin)
+    
+    --prepare input
+    
+    nInputs = inputsLin:size()[1]
+    -- err is a tensor containing the gradInput vector of the linear network gathered by backward() at each pixel location 
+    err = torch.Tensor(inputsLin:size())
+    
+    
+        
+    local function fevalLin(x)
+      
+        if x ~= parametersLin then
+          parametersLin:copy(x)
+        end
+        
+        gradParametersLin:zero()
+        
+        local fLin = 0
+        local batchSizeLin = nInputs/8
+        
+      for i = 1,nInputs,batchSizeLin do
+        print(i)
+        -- update confusion
+        collectgarbage()
+          local i2 = math.min(nInputs-1,i + batchSizeLin -1) 
+          local outputLin = linModel:forward(inputsLin[{{i,i2},{}}])
+          
+          
+          local errLin = criterion:forward(outputLin,targetsLin[{{i,i2}}])
+          fLin = fLin + errLin
+          
+          confusion:batchAdd(outputLin, targetsLin[{{i,i2}}])
+          
+          collectgarbage()
+          local df_doLin = criterion:backward(outputLin, targetsLin[{{i,i2}}])
+          err[{{i,i2}}] = linModel:backward(inputsLin[{{i,i2}}], df_doLin)
+        
+      end
+      gradParametersLin:div(nInputs)
+      fLin = fLin/nInputs
+      return fLin, gradParametersLin
+    end
+    
+    
+    optimMethod(fevalLin,parametersLin,optimState)
+    return err
+  end

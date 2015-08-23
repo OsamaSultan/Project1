@@ -12,14 +12,17 @@ require 'optim'   -- an optimization package, for online and batch methods
 --dataLocT7 = '../../Data/Torch/'
 trInfo = torch.load('dataloc..Train_Info.t7');
 
-labelsFileName = 'NYU_V2_L5.t7'
-labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
 teIndeces = trInfo.teIndeces
 tesize = 654
 width = 640
 height = 480
 nChannels = 3
 
+if model then
+    convModel = model:get(1)
+    linModel = model:get(2)
+   
+end
 ----------------------------------------------------------------------
 print '==> defining test procedure'
 
@@ -70,9 +73,16 @@ function test()
 
       -- test sample
       collectgarbage()
-      local pred = model:forward(input)
-      target:size()
-      --confusion:add(pred, target)
+      local featurePixels = convModel:forward(input)
+      
+      nPixels = featurePixels:size()
+      for ii = 1,nPixels do
+        predPixelClass = linModel:forward(featurePixels[ii])
+        confusion:add(predPixelClass, target[i])
+      end
+      
+      
+      --
       
    end
 
