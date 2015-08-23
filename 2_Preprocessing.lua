@@ -34,30 +34,23 @@ nTeImages = 654
 
 batchSize = 18
 
-widthIn = 640
-heightIn = 480
 
-widthOut = 320
-heightOut = 240
+width = 640
+height = 480
 nChannels = 3
 
 imagesFileName = 'NYU_V2_RGB.t7'
 depthsFileName = 'NYU_V2_D.t7'
-labelsFileName = 'NYU_V2_L5.t7'
+labelsFileName = 'NYU_V2_L.t7'
 
-imagesOutFileName = 'NYU_V2_RGB.t7'
-depthsOutFileName = 'NYU_V2_D.t7'
-labelsOutFileName = 'NYU_V2_L5.t7'
+trFileName =  'NYU_V2_Train_nYUV.t7'
+teFileName =  'NYU_V2_Test_nYUV.t7'
 
-trFileName =  'NYU_V2_Train_nYUV_320_240.t7'
-teFileName =  'NYU_V2_Test_nYUV__320_240.t7'
+dataLocT7 = '../../Data/Torch/'
 
-
-dataLocT7 = '../../../../MSc_Data/NYU_V2/Torch'
-
-trFileSize = nTrImages*nChannels*heightOut*widthOut
-teFileSize = nTeImages*nChannels*heightOut*widthOut
-imagesFileSize = nImages*nChannels*heightIn*widthIn
+trFileSize = nTrImages*nChannels*height*width
+teFileSize = nTeImages*nChannels*height*width
+imagesFileSize = nImages*nChannels*height*width
 ----------------------------------------------------------------------
 
 -- preprocessing data
@@ -87,14 +80,13 @@ else
   randIndeces = torch.randperm(nImages);
   trIndeces = randIndeces[{{1,nTrImages}}]
   teIndeces = randIndeces[{{-nTeImages,-1}}]
-
 end
 
 ----------------------------------------------------------------------------
 print('Allocating Space on Disk')
 -- Allocate sopace for the preprocessed training and tesiting datasets
-torch.save(dataLocT7..trFileName,torch.FloatTensor(trFileSize))
-torch.save(dataLocT7..teFileName,torch.FloatTensor(teFileSize))
+--torch.save(dataLocT7..trFileName,torch.FloatTensor(trFileSize))
+--torch.save(dataLocT7..teFileName,torch.FloatTensor(teFileSize))
 
 trStorage = torch.FloatStorage(dataLocT7..trFileName,true,trFileSize)
 teStorage = torch.FloatStorage(dataLocT7..teFileName,true,teFileSize)
@@ -120,27 +112,17 @@ while imageCounter < nTrImages do
   print('Accessing and Converting Train Data Part '..i )
   indeces = trIndeces[{{i1,i2}}] 
   nBatch = indeces:size()[1]
-  imagesTensor = torch.FloatTensor(nBatch,nChannels,heightOut,widthOut)
-  labelsTensor = torch.ByteTensor(nBatch,heightOut,widthOut)
-  depthsTensor = torch.FloatTensor(nBatch,heightOut,widthOut)
-  
-  
+  imagesTensor = torch.FloatTensor(nBatch,nChannels,height,width)
   for j = 1,nBatch  do
     
     n = indeces[j]
-    offset = 1 + (n-1)*nChannels*heightIn*widthIn
+    offset = 1 + (n-1)*nChannels*height*width
     --access the index in the original RGB file
-    im = torch.ByteTensor(imagesStorage, offset, torch.LongStorage{nChannels,heightIn,widthIn})
+    im = torch.ByteTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
     im2 = im:clone()
     im2 = im2:float()
-    im3 = image.rgb2yuv(im2)
-    imagesTensor[j] = image.scale(im3,widthOut,heightOut,'bicubic')
-    
-    offset = 1 + (i-1)*heightIn*widthIn
-    lab = torch.ByteTensor(imagesStorage, offset, torch.LongStorage{heightIn,widthIn})
-    lab2 = lab:clone()
-    
-    
+    im = image.rgb2yuv(im2)
+    imagesTensor[j] = im
   end
   
   print('Calculating Mean and STD')
