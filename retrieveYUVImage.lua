@@ -1,35 +1,49 @@
-im = retrieveYUVImage(1)
 
-local function retrieveYUVImage(indeces)
+function retrieveYUVImage(n, train)
   require 'image'
   require 'torch'
-  dataLocT7 = '../../Data/Torch/'
-  imagesFileName = 'NYU_V2_Train_nYUV.t7'
+  dataLocT7 ='../../MSc/MSc_Data/NYU_V2/Torch/320_240/'
+
+
   
   
+
   
-  width = 640
-  height = 480
+  
+  width = 320
+  height = 240
   nChannels = 3
-  --indeces = torch.Tensor({795})
-  --nImages = indeces:size()[1]
   
-  --trInfo = torch.load('dataloc..Train_Info.t7');
-  --randIndeces = trInfo.randIndeces
-  --trIndeces = trInfo.trIndeces
-  --teIndeces = trInfo.teIndeces
-  --mu = trInfo.mu
-  --sigma = trInfo.sigma
+  trInfo = torch.load('dataloc..Train_Info.t7');
+  randIndeces = trInfo.randIndeces
+  trIndeces = trInfo.trIndeces
+  teIndeces = trInfo.teIndeces
   
-  --imagesTensor = torch.FloatTensor(nImages,nChannels,height,width)
-  imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
-  --for i = 1,nImages  do
-    n = indeces[1]
-    offset = 1 + (n-1)*nChannels*height*width
-    im = torch.FloatTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
-    im2 = im:clone()
-    
-    return im2
+  if train then
+    imagesFileName = 'NYU_V2_Train_nYUV.t7'
+    nLabel = trIndeces[n]
+  else
+    imagesFileName = 'NYU_V2_Train_nYUV.t7'
+    nLabel = teIndeces[n]
+  end
+  local labelsFileName = 'NYU_V2_L5.t7'
+
+  local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
+  local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
+  
+  
+  offset = 1 + (n-1)*nChannels*height*width
+  local im = torch.FloatTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
+  m2 = im:clone()
+  
+  
+  offsetLabel = 1 + (nLabel-1)*height*width
+  local lab = torch.ByteTensor(labelsStorage, offsetLabel, torch.LongStorage{height,width})
+  labels = lab:clone()
+  
+  
+  return im2,labels
+  
     --channels = {'y','u','v'}
     --for j,channel in ipairs(channels) do
       --im2[{{j},{},{}}]:mul(sigma[j])

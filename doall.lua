@@ -78,4 +78,3 @@ for i = 1,nEpochs do
   train()
   test()
 end
-torch.save('model.net',model)

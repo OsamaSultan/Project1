@@ -29,10 +29,10 @@ print '==> defining test procedure'
 -- test function
 function test()
    -- local vars
-  local imagesFileName = 'NYU_V2_Test_nYUV.t7'
-  local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
-  local labelsFileName = 'NYU_V2_L5.t7'
-  local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
+  --local imagesFileName = 'NYU_V2_Test_nYUV.t7'
+  --local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
+  --local labelsFileName = 'NYU_V2_L5.t7'
+  --local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
   
    local time = sys.clock()
 
@@ -52,20 +52,22 @@ function test()
       xlua.progress(t, tesize)
       collectgarbage()
       -- get new sample
-      n = t
-      offset = 1 + (n-1)*nChannels*height*width
-      im = torch.FloatTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
-      imageSample = im:clone()
-      imageSample = image.scale(imageSample,width*scale,height*scale)
-      collectgarbage()
-      nLabel = teIndeces[n]
-      offsetLabel = 1 + (nLabel-1)*height*width
-      lab = torch.ByteTensor(labelsStorage, offsetLabel, torch.LongStorage{height,width})
-      labels = lab:clone()
-      labels = image.scale(labels, width*scale,height*scale,'simple')
+      --n = t
+      --offset = 1 + (n-1)*nChannels*height*width
+      --im = torch.FloatTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
+      --imageSample = im:clone()
+      --imageSample = image.scale(imageSample,width*scale,height*scale)
+      --collectgarbage()
+      --nLabel = teIndeces[n]
+      --offsetLabel = 1 + (nLabel-1)*height*width
+      --lab = torch.ByteTensor(labelsStorage, offsetLabel, torch.LongStorage{height,width})
+      --labels = lab:clone()
+      --labels = image.scale(labels, width*scale,height*scale,'simple')
+      
+      imageSample,labels = retrieveYUVImage(n,1);
       labels = labels:reshape(height*width*scale*scale)
       
-      local input = imageSample:clone()
+      local input = imageSample
       local target = labels
       --if opt.type == 'double' then input = input:double()
       --elseif opt.type == 'cuda' then input = input:cuda() end

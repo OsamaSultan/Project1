@@ -35,8 +35,8 @@ nTeImages = 654
 batchSize = 18
 
 
-width = 640
-height = 480
+width = 320
+height = 240
 nChannels = 3
 
 imagesFileName = 'NYU_V2_RGB.t7'
@@ -46,7 +46,7 @@ labelsFileName = 'NYU_V2_L.t7'
 trFileName =  'NYU_V2_Train_nYUV.t7'
 teFileName =  'NYU_V2_Test_nYUV.t7'
 
-dataLocT7 = '../../Data/Torch/'
+dataLocT7 ='../../MSc/MSc_Data/NYU_V2/Torch/320_240/'
 
 trFileSize = nTrImages*nChannels*height*width
 teFileSize = nTeImages*nChannels*height*width
@@ -85,8 +85,8 @@ end
 ----------------------------------------------------------------------------
 print('Allocating Space on Disk')
 -- Allocate sopace for the preprocessed training and tesiting datasets
---torch.save(dataLocT7..trFileName,torch.FloatTensor(trFileSize))
---torch.save(dataLocT7..teFileName,torch.FloatTensor(teFileSize))
+torch.save(dataLocT7..trFileName,torch.FloatTensor(trFileSize))
+torch.save(dataLocT7..teFileName,torch.FloatTensor(teFileSize))
 
 trStorage = torch.FloatStorage(dataLocT7..trFileName,true,trFileSize)
 teStorage = torch.FloatStorage(dataLocT7..teFileName,true,teFileSize)

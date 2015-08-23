@@ -17,6 +17,7 @@ require 'torch'   -- torch
 require 'xlua'    -- xlua provides useful tools, like progress bars
 require 'optim'
 require 'image' -- an optimization package, for online and batch methods
+dofile 'retrieveYUVImage.lua'
 
 ----------------------------------------------------------------------
 -- parse command line arguments
@@ -48,8 +49,10 @@ end
    --criterion:cuda()
 --end
 --dataLocT7 = '../../Data/Torch/'
-dataLocT7 ='../../MSc/MSc_Data/NYU_V2/Torch/'
-trInfo = torch.load('dataloc..Train_Info.t7');
+--dataLocT7 ='../../MSc/MSc_Data/NYU_V2/Torch/320_240/'
+--trInfo = torch.load('dataloc..Train_Info.t7');
+
+
 
 
 trIndeces = trInfo.trIndeces
@@ -130,8 +133,8 @@ print '==> defining training procedure'
 function train()
  
 
-local imagesFileName = 'NYU_V2_Train_nYUV.t7'
-local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
+--local imagesFileName = 'NYU_V2_Test_nYUV.t7'
+--local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
 local labelsFileName = 'NYU_V2_L5.t7'
 local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
 
@@ -145,7 +148,7 @@ local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
    model:training()
 
    -- shuffle at each epoch
-   shuffle = torch.randperm(trsize)
+   shuffle = torch.randperm(654)
 
    -- do one epoch
    print('==> doing epoch on training data:')
@@ -163,19 +166,16 @@ local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
          -- load new sample
          
          n = shuffle[i]
-         offset = 1 + (n-1)*nChannels*height*width
-         im = torch.FloatTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
+         --offset = 1 + (n-1)*nChannels*height*width
+        -- im = torch.FloatTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
          
-         imageSample = im:clone()
-         imageSample = image.scale(imageSample,width*scale,height*scale)
+         imageSample,labels = retrieveYUVImage(n,1);
+         --imageSample = im:clone()
+         --imageSample = image.scale(imageSample,width*scale,height*scale)
          
          
-         nLabel = trIndeces[n]
-         offsetLabel = 1 + (nLabel-1)*height*width
-         lab = torch.ByteTensor(labelsStorage, offsetLabel, torch.LongStorage{height,width})
-          
-         labels = lab:clone()
-         labels = image.scale(labels, width*scale,height*scale,'simple')
+         
+         --labels = image.scale(labels, width*scale,height*scale,'simple')
          labels = labels:reshape(height*width*scale*scale)
          --labels = labels:double()
          

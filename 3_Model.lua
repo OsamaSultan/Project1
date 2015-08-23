@@ -12,9 +12,9 @@ print '==> define parameters'
 
 -- Feature map dimensions
 nfeats = 3
-width = 640
-height = 480
-scale = 0.5
+width = 320
+height = 240
+scale = 1
 nPixels = width*height*scale*scale
 ninputs = nfeats*nPixels
 
