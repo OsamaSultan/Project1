@@ -2,7 +2,7 @@
 function retrieveYUVImage(n, train)
   require 'image'
   require 'torch'
-  dataLocT7 ='../../MSc/MSc_Data/NYU_V2/Torch/320_240/'
+  dataLocT7 ='../../MSc_Data/NYU_V2/Torch/320_240/'
 
 
   
@@ -28,8 +28,8 @@ function retrieveYUVImage(n, train)
   end
   local labelsFileName = 'NYU_V2_L5.t7'
 
-  imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
-  labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
+  local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
+  local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
   
   
   offset = 1 + (n-1)*nChannels*height*width
@@ -40,7 +40,7 @@ function retrieveYUVImage(n, train)
   offsetLabel = 1 + (nLabel-1)*height*width
   local lab = torch.ByteTensor(labelsStorage, offsetLabel, torch.LongStorage{height,width})
   labels = lab:clone()
-  
+  collectgarbage()
   
   return im2,labels
   

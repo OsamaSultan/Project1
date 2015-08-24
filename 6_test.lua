@@ -4,7 +4,7 @@
 --
 -- Clement Farabet
 ----------------------------------------------------------------------
---require('mobdebug').start()
+require('mobdebug').start()
 require 'torch'   -- torch
 require 'xlua'    -- xlua provides useful tools, like progress bars
 require 'optim'   -- an optimization package, for online and batch methods
@@ -67,21 +67,24 @@ function test()
       imageSample,labels = retrieveYUVImage(t,0);
       labels = labels:reshape(height*width*scale*scale)
       
-      local input = imageSample
-      local target = labels
+      local input = imageSample:clone()
+      local target = labels:clone()
       --if opt.type == 'double' then input = input:double()
       --elseif opt.type == 'cuda' then input = input:cuda() end
       --local target = labels
 
       -- test sample
       collectgarbage()
-      local featurePixels = convModel:forward(input)
+      print(input[1][1][1])
+      local pred = model:forward(input)
+      confusion:batchAdd(pred, target)
       
-      nPixels = featurePixels:size()
-      for ii = 1,nPixels do
-        predPixelClass = linModel:forward(featurePixels[ii])
-        confusion:add(predPixelClass, target[i])
-      end
+      --local featurePixels = convModel:forward(input)
+      --nPixels = featurePixels:size()
+     -- for ii = 1,nPixels do
+       -- predPixelClass = linModel:forward(featurePixels[ii])
+        --confusion:add(predPixelClass, target[i])
+      --end
       
       
       --

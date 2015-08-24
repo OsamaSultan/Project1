@@ -12,7 +12,7 @@
 --
 -- Clement Farabet
 ----------------------------------------------------------------------
-require('mobdebug').start()
+--require('mobdebug').start()
 require 'torch'   -- torch
 require 'xlua'    -- xlua provides useful tools, like progress bars
 require 'optim'
@@ -86,7 +86,8 @@ testLogger = optim.Logger(paths.concat(opt.save, 'test.log'))
 --if model then
     --convModel = model:get(1)
     --linModel = model:get(2)
-   parameters,gradParameters = convModel:getParameters()
+   --parameters,gradParameters = convModel:getParameters()
+   parameters,gradParameters = model:getParameters()
    parametersLin,gradParametersLin = linModel:getParameters()
 --end
 
@@ -178,8 +179,8 @@ function train()
          --labels = labels:double()
          
          collectgarbage()
-         local input = imageSample
-         local target = labels
+         local input = imageSample:clone()
+         local target = labels:clone()
          --if opt.type == 'double' then 
          --input = input:double()
          --elseif opt.type == 'cuda' then input = input:cuda() 
@@ -205,26 +206,28 @@ function train()
                        gradParameters:zero()
 
                        -- f is the average of all criterions
-                       --local f = 0
+                       local f = 0
 
                        -- evaluate function for complete mini batch
                        for i = 1,#inputs do
                           -- estimate f
                          collectgarbage()
-                          local output = convModel:forward(inputs[i])
+                          --local output = convModel:forward(inputs[i])
+                          local output = model:forward(inputs[i])
                           
                           
                           -- do an epoch on the linear model using the output of the conv model as batch of inputs
-                          --local err = criterion:forward(output, targets[i])
+                          local err = criterion:forward(output, targets[i])
                           
-                          err = trainLin(output,targets[i])
-                          f = err
+                          --err = trainLin(output,targets[i])
+                          f = f + err
                           
                           
                           collectgarbage()
                           -- estimate df/dW
-                          --local df_do = criterion:backward(output, targets[i])
-                          convModel:backward(inputs[i], err)
+                          local df_do = criterion:backward(output, targets[i])
+                          model:backward(inputs[i], df_do)
+                          confusion:batchAdd(output,targets[i])
 
                           
                        end
