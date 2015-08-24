@@ -279,7 +279,7 @@ function train()
    
    os.execute('mkdir -p ' .. sys.dirname(filename))
    print('==> saving model to '..filename)
-   torch.save(filename, convModel)
+   torch.save(filename, model)
    torch.save(filename2, linModel)
 
    -- next epoch

@@ -65,8 +65,9 @@ function test()
       --labels = image.scale(labels, width*scale,height*scale,'simple')
       
       imageSample,labels = retrieveYUVImage(t,0);
-      labels = labels:reshape(height*width*scale*scale)
       
+      labels = labels:reshape(height*width*scale*scale)
+      collectgarbage()
       local input = imageSample:clone()
       local target = labels:clone()
       --if opt.type == 'double' then input = input:double()
@@ -74,9 +75,9 @@ function test()
       --local target = labels
 
       -- test sample
-      collectgarbage()
-      print(input[1][1][1])
-      local pred = model:forward(input)
+      
+      pred = model:forward(input)
+      
       confusion:batchAdd(pred, target)
       
       --local featurePixels = convModel:forward(input)

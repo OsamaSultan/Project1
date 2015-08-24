@@ -73,8 +73,7 @@ dofile '6_test.lua'
 
 ----------------------------------------------------------------------
 print '==> training!'
-nEpochs = 
-for i = 1,nEpochs do
-  train()
+while true do
+  --train()
   test()
 end

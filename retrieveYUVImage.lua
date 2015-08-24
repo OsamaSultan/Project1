@@ -4,12 +4,6 @@ function retrieveYUVImage(n, train)
   require 'torch'
   dataLocT7 ='../../MSc_Data/NYU_V2/Torch/320_240/'
 
-
-  
-  
-
-  
-  
   width = 320
   height = 240
   nChannels = 3
@@ -22,19 +16,23 @@ function retrieveYUVImage(n, train)
   if train then
     imagesFileName = 'NYU_V2_Train_nYUV.t7'
     nLabel = trIndeces[n]
+    local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
+    offset = 1 + (n-1)*nChannels*height*width
+    local im = torch.FloatTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
+    im2 = im:clone()
   else
-    imagesFileName = 'NYU_V2_Train_nYUV.t7'
+    imagesFileName = 'NYU_V2_Test_nYUV.t7'
     nLabel = teIndeces[n]
+    local imagesStorageTest = torch.FloatStorage(dataLocT7..imagesFileName,true)
+    offset = 1 + (n-1)*nChannels*height*width
+    local im = torch.FloatTensor(imagesStorageTest, offset, torch.LongStorage{nChannels,height,width})
+    im2 = im:clone()
   end
   local labelsFileName = 'NYU_V2_L5.t7'
 
-  local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
+  
   local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
   
-  
-  offset = 1 + (n-1)*nChannels*height*width
-  local im = torch.FloatTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
-  im2 = im:clone()
   
   
   offsetLabel = 1 + (nLabel-1)*height*width
