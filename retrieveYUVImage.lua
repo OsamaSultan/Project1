@@ -28,13 +28,13 @@ function retrieveYUVImage(n, train)
   end
   local labelsFileName = 'NYU_V2_L5.t7'
 
-  local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
-  local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
+  imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
+  labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
   
   
   offset = 1 + (n-1)*nChannels*height*width
   local im = torch.FloatTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
-  m2 = im:clone()
+  im2 = im:clone()
   
   
   offsetLabel = 1 + (nLabel-1)*height*width

@@ -18,11 +18,11 @@ width = 640
 height = 480
 nChannels = 3
 
-if model then
-    convModel = model:get(1)
-    linModel = model:get(2)
+--if model then
+  --  convModel = model:get(1)
+    --linModel = model:get(2)
    
-end
+--end
 ----------------------------------------------------------------------
 print '==> defining test procedure'
 
@@ -64,7 +64,7 @@ function test()
       --labels = lab:clone()
       --labels = image.scale(labels, width*scale,height*scale,'simple')
       
-      imageSample,labels = retrieveYUVImage(n,1);
+      imageSample,labels = retrieveYUVImage(t,0);
       labels = labels:reshape(height*width*scale*scale)
       
       local input = imageSample

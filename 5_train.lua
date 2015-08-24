@@ -55,7 +55,7 @@ end
 
 
 
-trIndeces = trInfo.trIndeces
+--trIndeces = trInfo.trIndeces
 trsize = 795
 --width = 640
 --height = 480
@@ -83,12 +83,12 @@ testLogger = optim.Logger(paths.concat(opt.save, 'test.log'))
 -- Retrieve parameters and gradients:
 -- this extracts and flattens all the trainable parameters of the mode
 -- into a 1-dim vector
-if model then
-    convModel = model:get(1)
-    linModel = model:get(2)
+--if model then
+    --convModel = model:get(1)
+    --linModel = model:get(2)
    parameters,gradParameters = convModel:getParameters()
    parametersLin,gradParametersLin = linModel:getParameters()
-end
+--end
 
 ----------------------------------------------------------------------
 print '==> configuring optimizer'
@@ -135,8 +135,8 @@ function train()
 
 --local imagesFileName = 'NYU_V2_Test_nYUV.t7'
 --local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
-local labelsFileName = 'NYU_V2_L5.t7'
-local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
+--local labelsFileName = 'NYU_V2_L5.t7'
+--local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
 
    -- epoch tracker
    epoch = epoch or 1
@@ -145,10 +145,10 @@ local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
    local time = sys.clock()
 
    -- set model to training mode (for modules that differ in training and testing, like Dropout)
-   model:training()
-
+   convModel:training()
+   linModel:training()
    -- shuffle at each epoch
-   shuffle = torch.randperm(654)
+   shuffle = torch.randperm(795)
 
    -- do one epoch
    print('==> doing epoch on training data:')
@@ -173,14 +173,12 @@ local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
          --imageSample = im:clone()
          --imageSample = image.scale(imageSample,width*scale,height*scale)
          
-         
-         
          --labels = image.scale(labels, width*scale,height*scale,'simple')
          labels = labels:reshape(height*width*scale*scale)
          --labels = labels:double()
          
          collectgarbage()
-         local input = imageSample:clone()
+         local input = imageSample
          local target = labels
          --if opt.type == 'double' then 
          --input = input:double()
@@ -273,10 +271,13 @@ local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
    end
 
    -- save/log current net
-   local filename = paths.concat(opt.save, 'model.net')
+   local filename = paths.concat(opt.save, 'convModel.net')
+   local filename2 = paths.concat(opt.save, 'linModel.net')
+   
    os.execute('mkdir -p ' .. sys.dirname(filename))
    print('==> saving model to '..filename)
-   torch.save(filename, model)
+   torch.save(filename, convModel)
+   torch.save(filename2, linModel)
 
    -- next epoch
    confusion:zero()
@@ -302,7 +303,7 @@ function trainLin(inputsLin, targetsLin)
         gradParametersLin:zero()
         
         local fLin = 0
-        local batchSizeLin = nInputs/8
+        local batchSizeLin = nInputs/4
         
       for i = 1,nInputs,batchSizeLin do
         print(i)

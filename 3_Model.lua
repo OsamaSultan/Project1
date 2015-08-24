@@ -47,7 +47,7 @@ ConMatrix3 = nn.tables.random(nstates[2], nstates[3],nstates[2]/2)
 --------------------------------------------------------------------------------------------------------------------------------
 print '==> Model Construction'
 -- Construt the model
-model = nn.Sequential()
+--model = nn.Sequential()
 
 -- First part of the model: a typical convolution network (conv+tanh+pool)
     convModel = nn.Sequential()
@@ -80,7 +80,7 @@ model = nn.Sequential()
       convModel:add(nn.Transpose({1,2}))
       
       
-model:add(convModel)
+--model:add(convModel)
     
 	-- Second Part of the Model: Linear classifier:
   
@@ -95,7 +95,7 @@ model:add(convModel)
       
       linModel:add(nn.LogSoftMax())  
       
-model:add(linModel)
+--model:add(linModel)
     
 --print '==> here is the model:'
 --print(model)
