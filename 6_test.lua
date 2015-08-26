@@ -28,6 +28,7 @@ print '==> defining test procedure'
 
 -- test function
 function test()
+  if not nanOK then return end
    -- local vars
   --local imagesFileName = 'NYU_V2_Test_nYUV.t7'
   --local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
@@ -66,10 +67,13 @@ function test()
       
       imageSample,labels = retrieveYUVImage(t,0);
       
-      labels = labels:reshape(height*width*scale*scale)
+      labels = labels:reshape(height*width)
       collectgarbage()
       local input = imageSample:clone()
       local target = labels:clone()
+      imageSample, labels = nil, nil
+      collectgarbage()
+      
       --if opt.type == 'double' then input = input:double()
       --elseif opt.type == 'cuda' then input = input:cuda() end
       --local target = labels

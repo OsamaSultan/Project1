@@ -72,8 +72,12 @@ dofile '5_train.lua'
 dofile '6_test.lua'
 
 ----------------------------------------------------------------------
+nanOK = true
+
 print '==> training!'
-while true do
-  --train()
+while nanOK do
+  train()
   test()
 end
+
+print('NAN DETECTED!!')

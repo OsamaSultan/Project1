@@ -16,7 +16,7 @@
 require 'torch'   -- torch
 require 'xlua'    -- xlua provides useful tools, like progress bars
 require 'optim'
-require 'image' -- an optimization package, for online and batch methods
+--require 'image' -- an optimization package, for online and batch methods
 dofile 'retrieveYUVImage.lua'
 
 ----------------------------------------------------------------------
@@ -88,7 +88,7 @@ testLogger = optim.Logger(paths.concat(opt.save, 'test.log'))
     --linModel = model:get(2)
    --parameters,gradParameters = convModel:getParameters()
    parameters,gradParameters = model:getParameters()
-   parametersLin,gradParametersLin = linModel:getParameters()
+   --parametersLin,gradParametersLin = linModel:getParameters()
 --end
 
 ----------------------------------------------------------------------
@@ -146,11 +146,10 @@ function train()
    local time = sys.clock()
 
    -- set model to training mode (for modules that differ in training and testing, like Dropout)
-   convModel:training()
-   linModel:training()
+   --model:training()
    -- shuffle at each epoch
-   shuffle = torch.randperm(795)
-
+   shuffle = torch.randperm(trsize)
+ 
    -- do one epoch
    print('==> doing epoch on training data:')
    print("==> online epoch # " .. epoch .. ' [batchSize = ' .. opt.batchSize .. ']')
@@ -175,19 +174,21 @@ function train()
          --imageSample = image.scale(imageSample,width*scale,height*scale)
          
          --labels = image.scale(labels, width*scale,height*scale,'simple')
-         labels = labels:reshape(height*width*scale*scale)
+         labels = labels:reshape(height*width)
          --labels = labels:double()
          
          collectgarbage()
-         local input = imageSample:clone()
-         local target = labels:clone()
+        input = imageSample:clone()
+        target = labels:clone()
+         labels, imageSample = nil,nil
+         collectgarbage()
          --if opt.type == 'double' then 
          --input = input:double()
          --elseif opt.type == 'cuda' then input = input:cuda() 
          --end
          
-         table.insert(inputs, input)
-         table.insert(targets, target)
+         --table.insert(inputs, input)
+         --table.insert(targets, target)
          collectgarbage()
          
         
@@ -196,46 +197,71 @@ function train()
       
       -- create closure to evaluate f(X) and df/dX
       local feval = function(x)
-        
+        local image = nil
+        local optim = nil
+        collectgarbage()
                        -- get new parameters
                        if x ~= parameters then
                           parameters:copy(x)
                        end
-
+                        
                        -- reset gradients
                        gradParameters:zero()
-
+                        
+                        
+                        if parameters:ne(parameters):sum() > 0 then
+                              print('Xiteration:'..t..'. Image sample: '.. n)
+                              print('Xnumber of nan parameters: '..parameters:ne(parameters):sum())
+                              nanOK = false 
+        
+                        end
                        -- f is the average of all criterions
-                       local f = 0
+                       --local f = 0
 
                        -- evaluate function for complete mini batch
-                       for i = 1,#inputs do
+                       --for i = 1,#inputs do
                           -- estimate f
                          collectgarbage()
                           --local output = convModel:forward(inputs[i])
-                          local output = model:forward(inputs[i])
+                          local output = model:forward(input)
+                          --convModel = model.modules[1]
                           
-                          
+                          if(output:ne(output):sum()>0) then
+                            
+                            print('FOUL output')
+                            print(output:ne(output):sum())
+                          else
+                            for c = 1,3 do
+                              im = input
+                              sigma = im[{{c},{},{}}]:std()
+                              mu = im[{{c},{},{}}]:mean()
+                             -- print('Mean: '..mu..'. Std: '..sigma)
+                            end
+                          end
+                        
                           -- do an epoch on the linear model using the output of the conv model as batch of inputs
-                          local err = criterion:forward(output, targets[i])
+                          local err = criterion:forward(output, target)
                           
                           --err = trainLin(output,targets[i])
-                          f = f + err
+                          f = err
                           
+                          --print(err)
                           
                           collectgarbage()
                           -- estimate df/dW
-                          local df_do = criterion:backward(output, targets[i])
-                          model:backward(inputs[i], df_do)
-                          confusion:batchAdd(output,targets[i])
-
+                          local df_do = criterion:backward(output, target)
+                          --df_do = df_do:mul(nPixels)
+                          model:backward(input, df_do)
+                          confusion:batchAdd(output,target)
                           
-                       end
+                          
+                          
+                       
 
                        -- normalize gradients and f(X)
-                       gradParameters:div(#inputs)
-                       f = f/#inputs
-
+                       --gradParameters:div(#inputs)
+                       --f = f/#inputs
+                      input,target = nil,nil
                        -- return f and df/dX
                        return f,gradParameters
                        
@@ -246,13 +272,21 @@ function train()
       
       if optimMethod == optim.asgd then
         
-         _,_,average = optimMethod(feval, parameters, optimState)
-      else
         
+         _,_,average = optimMethod(feval, parameters, optimState)
+     
+      else
+          
          optimMethod(feval, parameters, optimState)
          
+         
       end
-   
+      if parameters:ne(parameters):sum() > 0 then
+        print('iteration:'..t..'. Image sample: '.. n)
+        print('number of nan parameters: '..parameters:ne(parameters):sum())
+        nanOK = false 
+        return
+      end
    
   
   end
@@ -274,13 +308,13 @@ function train()
    end
 
    -- save/log current net
-   local filename = paths.concat(opt.save, 'convModel.net')
-   local filename2 = paths.concat(opt.save, 'linModel.net')
+   local filename = paths.concat(opt.save, 'model.net')
+   --local filename2 = paths.concat(opt.save, 'linModel.net')
    
    os.execute('mkdir -p ' .. sys.dirname(filename))
    print('==> saving model to '..filename)
    torch.save(filename, model)
-   torch.save(filename2, linModel)
+  -- torch.save(filename2, linModel)
 
    -- next epoch
    confusion:zero()
