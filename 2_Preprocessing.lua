@@ -85,8 +85,8 @@ end
 ----------------------------------------------------------------------------
 print('Allocating Space on Disk')
 -- Allocate sopace for the preprocessed training and tesiting datasets
-torch.save(dataLocT7..trFileName,torch.FloatTensor(trFileSize))
-torch.save(dataLocT7..teFileName,torch.FloatTensor(teFileSize))
+--torch.save(dataLocT7..trFileName,torch.FloatTensor(trFileSize))
+--torch.save(dataLocT7..teFileName,torch.FloatTensor(teFileSize))
 
 trStorage = torch.FloatStorage(dataLocT7..trFileName,true,trFileSize)
 teStorage = torch.FloatStorage(dataLocT7..teFileName,true,teFileSize)

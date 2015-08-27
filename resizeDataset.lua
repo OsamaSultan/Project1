@@ -57,7 +57,7 @@ for i = 1,nImages do
   if (i%100 == 0) then print(i) end
   
   offsetIn = 1 + (i-1)*nPixelsIn
-  im = torch.ByteTensor(imagesStorageIn,offsetIn+(i-1)*nChannels,torch.LongStorage{nChannels,heightIn,widthIn})
+  im = torch.ByteTensor(imagesStorageIn,1 + (i-1)*nPixelsIn*nChannels,torch.LongStorage{nChannels,heightIn,widthIn})
   dep = torch.FloatTensor(depthsStorageIn,offsetIn,torch.LongStorage{heightIn,widthIn})
   lab = torch.ByteTensor(labelsStorageIn,offsetIn,torch.LongStorage{heightIn,widthIn})
   
@@ -74,7 +74,7 @@ for i = 1,nImages do
   lab2 = image.scale(lab1,widthOut,heightOut,'simple')
   
   offsetOut = 1 + (i-1)*nPixelsOut
-  imStorage = torch.ByteStorage(imagesStorageOut,offsetOut+(i-1)*nChannels,nPixelsOut*nChannels)
+  imStorage = torch.ByteStorage(imagesStorageOut,1 + (i-1)*nPixelsOut*nChannels,nPixelsOut*nChannels)
   depStorage = torch.FloatStorage(depthsStorageOut,offsetOut,nPixelsOut)
   labStorage = torch.ByteStorage(labelsStorageOut,offsetOut,nPixelsOut)
   

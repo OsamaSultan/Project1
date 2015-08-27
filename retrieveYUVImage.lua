@@ -1,9 +1,10 @@
 
 function retrieveYUVImage(n, train)
-  require 'image'
+  local image = require 'image'
   require 'torch'
-  dataLocT7 ='../../MSc_Data/NYU_V2/Torch/320_240/'
+  dataLocT7 ='../../MSc/MSc_Data/NYU_V2/Torch/320_240/'
 
+  collectgarbage()
   width = 320
   height = 240
   nChannels = 3
@@ -12,6 +13,9 @@ function retrieveYUVImage(n, train)
   randIndeces = trInfo.randIndeces
   trIndeces = trInfo.trIndeces
   teIndeces = trInfo.teIndeces
+  sigma = trInfo.sigma
+  mu = trInfo.mu
+  
   
   if train then
     imagesFileName = 'NYU_V2_Train_nYUV.t7'
@@ -29,7 +33,7 @@ function retrieveYUVImage(n, train)
     im2 = im:clone()
   end
   local labelsFileName = 'NYU_V2_L5.t7'
-
+  collectgarbage()
   
   local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
   
@@ -38,16 +42,17 @@ function retrieveYUVImage(n, train)
   offsetLabel = 1 + (nLabel-1)*height*width
   local lab = torch.ByteTensor(labelsStorage, offsetLabel, torch.LongStorage{height,width})
   labels = lab:clone()
+  image = nil
   collectgarbage()
   
+   --channels = {'y','u','v'}
+  --for j,channel in ipairs(channels) do
+    -- im2[{{j},{},{}}]:mul(sigma[j])
+     --im2[{{j},{},{}}]:add(mu[j])
+  --end
+    --im2 = im2[{{1},{},{}}]
+    --= image.yuv2rgb(im2)
+    --image.save('im.jpeg',im2:div(torch.max(im2[{{1},{},{}}])))
   return im2,labels
-  
-    --channels = {'y','u','v'}
-    --for j,channel in ipairs(channels) do
-      --im2[{{j},{},{}}]:mul(sigma[j])
-      --im2[{{j},{},{}}]:add(mu[j])
-    --end
-    --im2 = image.yuv2rgb(im2)
-    --image.save('im.jpeg',im2:div(255))
   end
   
