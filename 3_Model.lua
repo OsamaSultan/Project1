@@ -38,7 +38,7 @@ ConMatrix1[2][{{17,22}}] = torch.range(11,16)
 ConMatrix1[1][{{1,10}}]:fill(1)-- First channel connects to first 10 Filters
 ConMatrix1[1][{{11,16}}]:fill(2) -- Second channel connects to the last 6 filters
 ConMatrix1[1][{{17,22}}]:fill(3) -- Third channel connects to the last 6 filters
-ConMatrix1 = ConMatrix1:transpose(1,2)
+ConMatrix1 = ConMatrix1:transpose(1,2):contiguous()
 
 
 -- Random Connectivity Matrix that takes 8 random feature maps from the first stage as input for each filter of the second filter bank
@@ -57,9 +57,8 @@ print '==> Model Construction'
       -- stage 1 : filter bank -> squashing -> Max pooling
       pad = (filtsize -1)/2
       
-      convModel:add(nn.SpatialConvolutionMM(nfeats,nstates[1], filtsize, filtsize))
-      
-      --convModel:add(nn.SpatialConvolutionMap(ConMatrix1, filtsize, filtsize))
+      --convModel:add(nn.SpatialConvolutionMM(nfeats,nstates[1], filtsize, filtsize))
+      convModel:add(nn.SpatialConvolutionMap(ConMatrix1, filtsize, filtsize))
       convModel:add(nn.SpatialZeroPadding(pad,pad,pad,pad))
       convModel:add(nn.Tanh())
       convModel:add(nn.SpatialMaxPooling(poolsize,poolsize,poolsize,poolsize))
