@@ -37,7 +37,8 @@ batchSize = 18
 
 width = 320
 height = 240
-nChannels = 3
+nChannelsIn = 3
+nChannelsOut = 4
 
 imagesFileName = 'NYU_V2_RGB.t7'
 depthsFileName = 'NYU_V2_D.t7'
@@ -48,22 +49,22 @@ teFileName =  'NYU_V2_Test_nYUV.t7'
 
 dataLocT7 ='../../MSc/MSc_Data/NYU_V2/Torch/320_240/'
 
-trFileSize = nTrImages*nChannels*height*width
-teFileSize = nTeImages*nChannels*height*width
-imagesFileSize = nImages*nChannels*height*width
+trFileSize = nTrImages*(nChannelsOut)*height*width
+teFileSize = nTeImages*(nChannelsOut)*height*width
+imagesFileSize = nImages*nChannelsIn*height*width
+depthsFileSize = nImages*height*width
 ----------------------------------------------------------------------
 
 -- preprocessing data
 -- + map into YUV space
--- + normalize luminance locally
 -- + normalize color channels globally across entire dataset
 
-sigma = {0,0,0} --initial std 
-mu = {0,0,0} --initial mean 
+sigma = {0,0,0,0} --initial std 
+mu = {0,0,0,0} --initial mean 
 NTotal = 0 --initial number of images
 
-SSE = {0,0,0} -- Sum of Squared Errors (see resources for calculation of combined std)
-GSS = {0,0,0} -- Group Sum of Squares
+SSE = {0,0,0,0} -- Sum of Squared Errors (see resources for calculation of combined std)
+GSS = {0,0,0,0} -- Group Sum of Squares
 
 ----------------------------------------------------------------------------
 --Divide indeces 1:1449 to training and testing batches
@@ -91,8 +92,9 @@ print('Allocating Space on Disk')
 trStorage = torch.FloatStorage(dataLocT7..trFileName,true,trFileSize)
 teStorage = torch.FloatStorage(dataLocT7..teFileName,true,teFileSize)
 imagesStorage = torch.ByteStorage(dataLocT7..imagesFileName,true,imagesFileSize)
+depthsStorage = torch.FloatStorage(dataLocT7..depthsFileName,true,depthsFileSize)
 ----------------------------------------------------------------------------
-channels = {'y','u','v'}
+channels = {'y','u','v','d'}
 saveOffset = 1;
 
 --Convert Training data to YUV, Calculate their collective mu and std, save them separately
@@ -112,17 +114,29 @@ while imageCounter < nTrImages do
   print('Accessing and Converting Train Data Part '..i )
   indeces = trIndeces[{{i1,i2}}] 
   nBatch = indeces:size()[1]
-  imagesTensor = torch.FloatTensor(nBatch,nChannels,height,width)
+  imagesTensor = torch.FloatTensor(nBatch,nChannelsOut,height,width)
   for j = 1,nBatch  do
     
     n = indeces[j]
-    offset = 1 + (n-1)*nChannels*height*width
+    offset = 1 + (n-1)*nChannelsIn*height*width
     --access the index in the original RGB file
-    im = torch.ByteTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
-    im2 = im:clone()
-    im2 = im2:float()
-    im = image.rgb2yuv(im2)
-    imagesTensor[j] = im
+    im1 = torch.ByteTensor(imagesStorage, offset, torch.LongStorage{nChannelsIn,height,width})
+    im2 = im1:clone():float()
+    im3 = image.rgb2yuv(im2)
+    im = im3:clone()
+    im1,im2,im3 = nil,nil,nil
+    
+    offsetD = 1 + (n-1)*height*width
+    dep1 = torch.FloatTensor(depthsStorage, offsetD, torch.LongStorage{1,height,width})
+    dep = dep1:clone()
+    dep1 = nil
+    
+    fullIm1 = torch.cat(im,dep,1)
+    fullIm = fullIm1:clone()
+    fullIm1 = nil
+    collectgarbage()
+    
+    imagesTensor[j] = fullIm
   end
   
   print('Calculating Mean and STD')
@@ -131,8 +145,8 @@ while imageCounter < nTrImages do
     muBatch = imagesTensor[{ {},j,{},{} }]:mean()
     sigmaBatch = imagesTensor[{ {},j,{},{} }]:std()
     varBatch = sigmaBatch^2
-		-- combine mean and standard deviation with those of previous batches:
-		mu[j] = (NTotal*mu[j] + nBatch*muBatch)/(NTotal + nBatch)
+		-- combine mean and standard deviation with those of previous batches:  
+    mu[j] = (NTotal*mu[j] + nBatch*muBatch)/(NTotal + nBatch)
 		
 		SSE[j] = SSE[j] + varBatch * (nBatch-1)
 		GSS[j] = GSS[j] + (muBatch - mu[j])^2 * nBatch
@@ -144,8 +158,8 @@ while imageCounter < nTrImages do
   
   print('Saving Part '.. i)
 	-- Save The training dataset on disk
-  imStorage = torch.FloatStorage(trStorage,saveOffset,nBatch*nChannels*width*height)
-  saveOffset = saveOffset + nBatch*nChannels*width*height
+  imStorage = torch.FloatStorage(trStorage,saveOffset,nBatch*nChannelsOut*width*height)
+  saveOffset = saveOffset + nBatch*nChannelsOut*width*height
   imStorage:copy(imagesTensor:storage())
   -- clear the memory
   imagesTensor = nil
@@ -161,10 +175,10 @@ end
 
 print('Normalization:')
 -- Define the normalization neighborhood:
-neighborhood = image.gaussian1D(13)
+--neighborhood = image.gaussian1D(13)
 
 -- Define our local normalization operator 
-normalization = nn.SpatialContrastiveNormalization(1, neighborhood, 1):float()
+--normalization = nn.SpatialContrastiveNormalization(1, neighborhood, 1):float()
 
 teSaveOffset = 1;
 imageCounter = 0
@@ -183,16 +197,29 @@ while imageCounter < nTeImages do
   print('Access and Convert Test Data Part '..i)
   indeces = teIndeces[{{i1,i2}}] 
   nBatch = indeces:size()[1]
-  imagesTensor = torch.FloatTensor(nBatch,nChannels,height,width)
+  imagesTensor = torch.FloatTensor(nBatch,nChannelsOut,height,width)
   
   for j = 1,nBatch  do
-    n = indeces[j]
-    offset = 1 + (n-1)*nChannels*height*width
-    im = torch.ByteTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
-    im2 = im:clone()
-    im2 = im2:float()
-    im = image.rgb2yuv(im2)
-    imagesTensor[j] = im
+   n = indeces[j]
+    offset = 1 + (n-1)*nChannelsIn*height*width
+    --access the index in the original RGB file
+    im1 = torch.ByteTensor(imagesStorage, offset, torch.LongStorage{nChannelsIn,height,width})
+    im2 = im1:clone():float()
+    im3 = image.rgb2yuv(im2)
+    im = im3:clone()
+    im1,im2,im3 = nil,nil,nil
+    
+    offsetD = 1 + (n-1)*height*width
+    dep1 = torch.FloatTensor(depthsStorage, offsetD, torch.LongStorage{1,height,width})
+    dep = dep1:clone()
+    dep1 = nil
+    
+    fullIm1 = torch.cat(im,dep,1)
+    fullIm = fullIm1:clone()
+    fullIm1 = nil
+    collectgarbage()
+    
+    imagesTensor[j] = fullIm
   end
 	
   print('Normalize Test Data')
@@ -202,17 +229,17 @@ while imageCounter < nTeImages do
     imagesTensor[{ {},j,{},{} }]:add(-mu[j])
 		imagesTensor[{ {},j,{},{} }]:div(sigma[j])
 		print('==>local normalization')
-		for k = 1,nBatch do
+		--for k = 1,nBatch do
 			--normalize each image locally 
-			imagesTensor[{ k,{j},{},{} }] = normalization:forward(imagesTensor[{ k,{j},{},{} }])
-      collectgarbage()
-   	end
+			--imagesTensor[{ k,{j},{},{} }] = normalization:forward(imagesTensor[{ k,{j},{},{} }])
+      --collectgarbage()
+   	--end
     
 	end
   print('Save Test Data')
 	-- Save The testing dataset on disk
-  imStorage = torch.FloatStorage(teStorage,teSaveOffset,nBatch*nChannels*width*height)
-  teSaveOffset = teSaveOffset + nBatch*nChannels*width*height
+  imStorage = torch.FloatStorage(teStorage,teSaveOffset,nBatch*nChannelsOut*width*height)
+  teSaveOffset = teSaveOffset + nBatch*nChannelsOut*width*height
   imStorage:copy(imagesTensor:storage())
 	
 	-- Free the memory	
@@ -234,8 +261,8 @@ while imageCounter < nTrImages do
   
 	-- Access Training dataset (from the previously saved file)
   print('Access Train Data part'..i)
-  imagesTensor = torch.FloatTensor(trStorage,trSaveOffset,torch.LongStorage{nBatch,nChannels,height,width})
-  trSaveOffset = trSaveOffset + nBatch*nChannels*height*width
+  imagesTensor = torch.FloatTensor(trStorage,trSaveOffset,torch.LongStorage{nBatch,nChannelsOut,height,width})
+  trSaveOffset = trSaveOffset + nBatch*nChannelsOut*height*width
 
 	for j,channel in ipairs(channels) do	
 		--normalize each channel globlly
@@ -243,11 +270,11 @@ while imageCounter < nTrImages do
 		imagesTensor[{ {},j,{},{} }]:add(-mu[j])
 		imagesTensor[{ {},j,{},{} }]:div(sigma[j])
     print('local normalization')
-		for k = 1,nBatch do
+		--for k = 1,nBatch do
 			--normalize each image locally      			
-			imagesTensor[{ k,{j},{},{} }] = normalization:forward(imagesTensor[{ k,{j},{},{} }])
-      collectgarbage()
-   	end
+			--imagesTensor[{ k,{j},{},{} }] = normalization:forward(imagesTensor[{ k,{j},{},{} }])
+     -- collectgarbage()
+   --	end
 	end
   imagesTensor = nil
 	collectgarbage()

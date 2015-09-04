@@ -1,4 +1,4 @@
-function retrieveYUVImage(n, train)
+function retrieveYUVDImage(n, train)
   local image = require 'image'
   require 'torch'
   dataLocT7 ='../../MSc/MSc_Data/NYU_V2/Torch/320_240/'
@@ -6,7 +6,7 @@ function retrieveYUVImage(n, train)
   collectgarbage()
   width = 320
   height = 240
-  nChannels = 3
+  nChannels = 4
   
   trInfo = torch.load('dataloc..Train_Info.t7');
   randIndeces = trInfo.randIndeces

@@ -12,7 +12,7 @@ torch.setdefaulttensortype('torch.FloatTensor')
 print '==> define parameters'
 
 -- Feature map dimensions
-nfeats = 3
+nfeats = 4
 width = 320
 height = 240
 --scale = 1
@@ -31,13 +31,16 @@ poolsize = 2
 --------------------------------------------------------------------------------------------------------------------------------
 print '==> Connectivity Matrices'
 -- Connictivity Matrices for the specification of connections between the different Convolutional layers.
-ConMatrix1 = torch.Tensor(2,22) -- Connect three input channels (Feature Maps) to 16 Filters
-ConMatrix1[2][{{1,16}}] = torch.range(1,16)
-ConMatrix1[2][{{17,22}}] = torch.range(11,16) 
+ConMatrix1 = torch.Tensor(2,20) -- Connect three input channels (Feature Maps) to 16 Filters
+ConMatrix1[2][{{1,12}}] = torch.range(1,12)
+ConMatrix1[2][{{13,16}}] = torch.range(9,12) 
+ConMatrix1[2][{{17,20}}] = torch.range(13,16) 
+
        
-ConMatrix1[1][{{1,10}}]:fill(1)-- First channel connects to first 10 Filters
-ConMatrix1[1][{{11,16}}]:fill(2) -- Second channel connects to the last 6 filters
-ConMatrix1[1][{{17,22}}]:fill(3) -- Third channel connects to the last 6 filters
+ConMatrix1[1][{{1,8}}]:fill(1)-- Luminance channel connects to first 8 Filters
+ConMatrix1[1][{{9,12}}]:fill(2) -- U-Color channel connects to the middle 4 filters
+ConMatrix1[1][{{13,16}}]:fill(3) -- V-Color channel connects to the middle 4 filters
+ConMatrix1[1][{{17,20}}]:fill(4) -- Depth channel connects to the last 4 filters
 ConMatrix1 = ConMatrix1:transpose(1,2):contiguous()
 
 
@@ -55,7 +58,7 @@ print '==> Model Construction'
     convModel = nn.Sequential()
 
       -- stage 1 : filter bank -> squashing -> Max pooling
-      pad = (filtsize -1)/2
+      pad = (filtsize-1)/2
       
       --convModel:add(nn.SpatialConvolutionMM(nfeats,nstates[1], filtsize, filtsize))
       convModel:add(nn.SpatialConvolutionMap(ConMatrix1, filtsize, filtsize))
@@ -64,7 +67,6 @@ print '==> Model Construction'
       convModel:add(nn.SpatialMaxPooling(poolsize,poolsize,poolsize,poolsize))
 
       -- stage 2 : filter bank -> squashing -> Max pooling
-      
       convModel:add(nn.SpatialConvolutionMap(ConMatrix2, filtsize, filtsize))
       convModel:add(nn.SpatialZeroPadding(pad,pad,pad,pad))
       convModel:add(nn.Tanh())
@@ -72,15 +74,13 @@ print '==> Model Construction'
 
       -- stage 3 : filter bank
       convModel:add(nn.SpatialConvolutionMap(ConMatrix3, filtsize, filtsize))
-      
       convModel:add(nn.SpatialZeroPadding(pad,pad,pad,pad))
       
       -- Upsample to original size
       convModel:add(nn.SpatialUpSamplingNearest(4))
       
-      --Reshape so that each row contains all feature information at one pixel location
-      convModel:add(nn.View(nstates[3],nPixels))
-      convModel:add(nn.Transpose({1,2}))
+     
+      
       
       
     
@@ -92,8 +92,11 @@ print '==> Model Construction'
   
   -- Each row of the tensor will then be considered as an input to a linear transformation layer. This layer maps the features found at one pixel location to the space of all possible object classes. LinMap:F->C
   linModel = nn.Sequential()
+  
+     --Reshape so that each row contains all feature information at one pixel location
+      linModel:add(nn.View(nstates[3],nPixels))
+      linModel:add(nn.Transpose({1,2}))
       
-      --linModel:add(nn.LogSoftMax())
       linModel:add(nn.Linear(nstates[3],nClasses))
       
       linModel:add(nn.LogSoftMax())  

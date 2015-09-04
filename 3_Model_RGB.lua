@@ -78,9 +78,8 @@ print '==> Model Construction'
       -- Upsample to original size
       convModel:add(nn.SpatialUpSamplingNearest(4))
       
-      --Reshape so that each row contains all feature information at one pixel location
-      convModel:add(nn.View(nstates[3],nPixels))
-      convModel:add(nn.Transpose({1,2}))
+     
+      
       
       
     
@@ -92,8 +91,11 @@ print '==> Model Construction'
   
   -- Each row of the tensor will then be considered as an input to a linear transformation layer. This layer maps the features found at one pixel location to the space of all possible object classes. LinMap:F->C
   linModel = nn.Sequential()
+  
+     --Reshape so that each row contains all feature information at one pixel location
+      linModel:add(nn.View(nstates[3],nPixels))
+      linModel:add(nn.Transpose({1,2}))
       
-      --linModel:add(nn.LogSoftMax())
       linModel:add(nn.Linear(nstates[3],nClasses))
       
       linModel:add(nn.LogSoftMax())  

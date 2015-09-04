@@ -15,9 +15,9 @@
 --require('mobdebug').start()
 require 'torch'   -- torch
 require 'xlua'    -- xlua provides useful tools, like progress bars
-require 'optim'
---require 'image' -- an optimization package, for online and batch methods
-dofile 'retrieveYUVImage.lua'
+require 'optim' -- an optimization package, for online and batch methods
+
+dofile 'retrieveYUVDImage.lua'
 
 ----------------------------------------------------------------------
 -- parse command line arguments
@@ -164,16 +164,11 @@ function train()
       collectgarbage()
       for i = t,math.min(t+opt.batchSize-1,trsize) do
          -- load new sample
-         
          n = shuffle[i]
-         --offset = 1 + (n-1)*nChannels*height*width
-        -- im = torch.FloatTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
          
-         imageSample,labels = retrieveYUVImage(n,1);
-         --imageSample = im:clone()
-         --imageSample = image.scale(imageSample,width*scale,height*scale)
+         imageSample,labels = retrieveYUVDImage(n,1);
          
-         --labels = image.scale(labels, width*scale,height*scale,'simple')
+        
          labels = labels:reshape(height*width)
          --labels = labels:double()
          
@@ -182,15 +177,6 @@ function train()
         target = labels:clone()
          labels, imageSample = nil,nil
          collectgarbage()
-         --if opt.type == 'double' then 
-         --input = input:double()
-         --elseif opt.type == 'cuda' then input = input:cuda() 
-         --end
-         
-         --table.insert(inputs, input)
-         --table.insert(targets, target)
-         collectgarbage()
-         
         
       end
 
@@ -213,53 +199,30 @@ function train()
                               nanOK = false 
         
                         end
-                       -- f is the average of all criterions
-                       --local f = 0
-
-                       -- evaluate function for complete mini batch
-                       --for i = 1,#inputs do
-                          -- estimate f
+                    
                          collectgarbage()
-                          --local output = convModel:forward(inputs[i])
                           local output = model:forward(input)
-                          --convModel = model.modules[1]
                           
                           if(output:ne(output):sum()>0) then
-                            
                             print('FOUL output')
                             print(output:ne(output):sum())
-                          else
-                            for c = 1,3 do
-                              im = input
-                              sigma = im[{{c},{},{}}]:std()
-                              mu = im[{{c},{},{}}]:mean()
-                             -- print('Mean: '..mu..'. Std: '..sigma)
-                            end
                           end
                         
-                          -- do an epoch on the linear model using the output of the conv model as batch of inputs
-                          local err = criterion:forward(output, target)
+                        
+                          local f = criterion:forward(output, target)
                           
-                          --err = trainLin(output,targets[i])
-                          f = err
-                          
-                          --print(err)
+                
                           
                           collectgarbage()
                           -- estimate df/dW
                           local df_do = criterion:backward(output, target)
-                          --df_do = df_do:mul(nPixels)
+                  
                           model:backward(input, df_do)
                           confusion:batchAdd(output,target)
                           
                           
-                          
-                       
-
-                       -- normalize gradients and f(X)
-                       --gradParameters:div(#inputs)
-                       --f = f/#inputs
                       input,target = nil,nil
+                      
                        -- return f and df/dX
                        return f,gradParameters
                        
@@ -279,14 +242,6 @@ function train()
          
          
       end
-      if parameters:ne(parameters):sum() > 0 then
-        print('iteration:'..t..'. Image sample: '.. n)
-        print('number of nan parameters: '..parameters:ne(parameters):sum())
-        nanOK = false 
-        return
-      end
-   
-  
   end
   
 
@@ -307,63 +262,13 @@ function train()
 
    -- save/log current net
    local filename = paths.concat(opt.save, 'model.net')
-   --local filename2 = paths.concat(opt.save, 'linModel.net')
+
    
    os.execute('mkdir -p ' .. sys.dirname(filename))
    print('==> saving model to '..filename)
    torch.save(filename, model)
-  -- torch.save(filename2, linModel)
 
    -- next epoch
    confusion:zero()
    epoch = epoch + 1
 end
-
-function trainLin(inputsLin, targetsLin)
-    
-    --prepare input
-    
-    nInputs = inputsLin:size()[1]
-    -- err is a tensor containing the gradInput vector of the linear network gathered by backward() at each pixel location 
-    err = torch.Tensor(inputsLin:size())
-    
-    
-        
-    local function fevalLin(x)
-      
-        if x ~= parametersLin then
-          parametersLin:copy(x)
-        end
-        
-        gradParametersLin:zero()
-        
-        local fLin = 0
-        local batchSizeLin = nInputs/4
-        
-      for i = 1,nInputs,batchSizeLin do
-        print(i)
-        -- update confusion
-        collectgarbage()
-          local i2 = math.min(nInputs-1,i + batchSizeLin -1) 
-          local outputLin = linModel:forward(inputsLin[{{i,i2},{}}])
-          
-          
-          local errLin = criterion:forward(outputLin,targetsLin[{{i,i2}}])
-          fLin = fLin + errLin
-          
-          confusion:batchAdd(outputLin, targetsLin[{{i,i2}}])
-          
-          collectgarbage()
-          local df_doLin = criterion:backward(outputLin, targetsLin[{{i,i2}}])
-          err[{{i,i2}}] = linModel:backward(inputsLin[{{i,i2}}], df_doLin)
-        
-      end
-      gradParametersLin:div(nInputs)
-      fLin = fLin/nInputs
-      return fLin, gradParametersLin
-    end
-    
-    
-    optimMethod(fevalLin,parametersLin,optimState)
-    return err
-  end
