@@ -43,11 +43,16 @@ function retrieveYUVDImage(n, train)
   image = nil
   collectgarbage()
   
-   --channels = {'y','u','v'}
-  --for j,channel in ipairs(channels) do
-    -- im2[{{j},{},{}}]:mul(sigma[j])
-     --im2[{{j},{},{}}]:add(mu[j])
-  --end
+  -- normalize
+  -- Define the normalization neighborhood:
+    neighborhood = image.gaussian1D(15)
+
+-- Define our local normalization operator 
+  normalization = nn.SpatialContrastiveNormalization(1, neighborhood, 1):float()
+  channels = {'y','u','v','d'}
+  for j,channel in ipairs(channels) do
+    
+  end
     --im2 = im2[{{1},{},{}}]
     --= image.yuv2rgb(im2)
     --image.save('im.jpeg',im2:div(torch.max(im2[{{1},{},{}}])))

@@ -66,10 +66,10 @@ print '==> executing all'
 
 --dofile '1_MemoryMapping.lua'
 --dofile '2_Preprocessing.lua'
-dofile '3_Model.lua'
+dofile '3_Model_Multiscale_RGBD.lua'
 dofile '4_loss.lua'
-dofile '5_train.lua'
-dofile '6_test.lua'
+dofile '5_train_RGBD_MS.lua'
+dofile '6_test_RGBD_MS.lua'
 
 ----------------------------------------------------------------------
 nanOK = true

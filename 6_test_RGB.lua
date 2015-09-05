@@ -52,47 +52,21 @@ function test()
       -- disp progress
       xlua.progress(t, tesize)
       collectgarbage()
-      -- get new sample
-      --n = t
-      --offset = 1 + (n-1)*nChannels*height*width
-      --im = torch.FloatTensor(imagesStorage, offset, torch.LongStorage{nChannels,height,width})
-      --imageSample = im:clone()
-      --imageSample = image.scale(imageSample,width*scale,height*scale)
-      --collectgarbage()
-      --nLabel = teIndeces[n]
-      --offsetLabel = 1 + (nLabel-1)*height*width
-      --lab = torch.ByteTensor(labelsStorage, offsetLabel, torch.LongStorage{height,width})
-      --labels = lab:clone()
-      --labels = image.scale(labels, width*scale,height*scale,'simple')
-      
+    
       imageSample,labels = retrieveYUVDImage(t,0);
       
       labels = labels:reshape(height*width)
       collectgarbage()
-      local input = imageSample:clone()
+      local input = imageSample[{{1,3}}]:clone()
       local target = labels:clone()
       imageSample, labels = nil, nil
       collectgarbage()
       
-      --if opt.type == 'double' then input = input:double()
-      --elseif opt.type == 'cuda' then input = input:cuda() end
-      --local target = labels
-
-      -- test sample
       
       pred = model:forward(input)
       
       confusion:batchAdd(pred, target)
-      
-      --local featurePixels = convModel:forward(input)
-      --nPixels = featurePixels:size()
-     -- for ii = 1,nPixels do
-       -- predPixelClass = linModel:forward(featurePixels[ii])
-        --confusion:add(predPixelClass, target[i])
-      --end
-      
-      
-      --
+
       
    end
 
