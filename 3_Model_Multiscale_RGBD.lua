@@ -82,24 +82,24 @@ multiScaleModel = nn.ParallelTable()
       
       scale1:add(genericBranch)
       -- Upsample to original size
-      scale1:add(nn.SpatialUpSamplingNearest(4))
-      scale1:add(nn.View(nstates[3],nPixels))
+      --scale1:add(nn.SpatialUpSamplingNearest(4))
+      scale1:add(nn.View(nstates[3],nPixels/16))
       scale1:add(nn.Transpose({1,2}))
       
     scale2 = nn.Sequential()
     scale2:add(genericBranch:clone('weight','bias','gradWeight','gradBias'))
       
     -- Upsample to original size
-    scale2:add(nn.SpatialUpSamplingNearest(8))
-    scale2:add(nn.View(nstates[3],nPixels))
+    scale2:add(nn.SpatialUpSamplingNearest(2))
+    scale2:add(nn.View(nstates[3],nPixels)/16)
     scale2:add(nn.Transpose({1,2}))
       
        scale3 = nn.Sequential()
 
       scale3:add(genericBranch:clone('weight','bias','gradWeight','gradBias'))
       -- Upsample to original size
-      scale3:add(nn.SpatialUpSamplingNearest(16))
-      scale3:add(nn.View(nstates[3],nPixels))
+      scale3:add(nn.SpatialUpSamplingNearest(4))
+      scale3:add(nn.View(nstates[3],nPixels/16))
       scale3:add(nn.Transpose({1,2}))
             
       

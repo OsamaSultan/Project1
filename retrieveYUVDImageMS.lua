@@ -30,16 +30,27 @@ function retrieveYUVDImageMS(n, train)
     local im = torch.FloatTensor(imagesStorageTest, offset, torch.LongStorage{nChannels,height,width})
     im2 = im:clone()
   end
+  
+  
+
   local labelsFileName = 'NYU_V2_L5.t7'
+  local rgbFileName = 'NYU_V2_RGB.t7'
   collectgarbage()
   
   local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
+  local rgbStorage = torch.ByteStorage(dataLocT7..rgbFileName, true)
+  
   
   
   
   offsetLabel = 1 + (nLabel-1)*height*width
+  offsetRGBim = 1+ (nLabel-1)*3*height*width
   local lab = torch.ByteTensor(labelsStorage, offsetLabel, torch.LongStorage{height,width})
+  local rgbim1 = torch.ByteTensor(rgbStorage, offsetRGBim, torch.LongStorage{3,height,width})
+  
   labels = lab:clone()
+  rgbim = rgbim1:clone()
+  rgbim1 = nil
   collectgarbage()
   
   scales = {1,0.5,0.25}
@@ -61,6 +72,6 @@ function retrieveYUVDImageMS(n, train)
     --im2 = im2[{{1},{},{}}]
     --= image.yuv2rgb(im2)
     --image.save('im.jpeg',im2:div(torch.max(im2[{{1},{},{}}])))
-  return multiScaleIm,labels
+  return multiScaleIm,labels,rgbim
   end
   

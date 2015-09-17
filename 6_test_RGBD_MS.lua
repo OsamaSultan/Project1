@@ -14,26 +14,13 @@ trInfo = torch.load('dataloc..Train_Info.t7');
 
 teIndeces = trInfo.teIndeces
 tesize = 654
-width = 640
-height = 480
-nChannels = 3
 
---if model then
-  --  convModel = model:get(1)
-    --linModel = model:get(2)
-   
---end
 ----------------------------------------------------------------------
 print '==> defining test procedure'
 
 -- test function
 function test()
   if not nanOK then return end
-   -- local vars
-  --local imagesFileName = 'NYU_V2_Test_nYUV.t7'
-  --local imagesStorage = torch.FloatStorage(dataLocT7..imagesFileName,true)
-  --local labelsFileName = 'NYU_V2_L5.t7'
-  --local labelsStorage = torch.ByteStorage(dataLocT7..labelsFileName, true)
   
    local time = sys.clock()
 

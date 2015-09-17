@@ -42,19 +42,7 @@ if not opt then
    opt = cmd:parse(arg or {})
 end
 
-----------------------------------------------------------------------
--- CUDA?
---if opt.type == 'cuda' then
-  -- model:cuda()
-   --criterion:cuda()
---end
 
---trIndeces = trInfo.trIndeces
-trsize = 795
---width = 640
---height = 480
-
---nChannels = 3
 
 ----------------------------------------------------------------------
 print '==> defining some tools'
@@ -62,10 +50,7 @@ print '==> defining some tools'
 -- classes
 classes = {'1','2','3','4','5'}
 nClasses = 5
---for i = 1,nClasses do
-  --table.insert(classes,tostring(i))
---end
-
+trsize = 795
 
 -- This matrix records the current confusion across classes
 confusion = optim.ConfusionMatrix(classes)
